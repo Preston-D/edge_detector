@@ -5,8 +5,6 @@
 #include <pthread.h>
 #include <string.h>
 
-#define DEBUG // COMMENT ME OUT!
-
 #define LAPLACIAN_THREADS 4 // change the number of threads as you run your concurrency experiment
 
 /* Laplacian filter is 3 by 3 */
@@ -296,11 +294,6 @@ void *manage_image_file(void *args)
  */
 int main(int argc, char *argv[])
 {
-#ifdef DEBUG
-    char *test_argv[] = {"./edge_detector", "./sage/sage_1.ppm", "./sage/sage_2.ppm"};
-    argv = test_argv;
-    argc = sizeof(test_argv) / sizeof(char *);
-#endif
     if (argc < 2)
     {
         printf("Usage ./edge_detector filename[s]\n");
