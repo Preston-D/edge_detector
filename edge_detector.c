@@ -48,6 +48,7 @@ double total_elapsed_time = 0;
  */
 void *compute_laplacian_threadfn(void *params)
 {
+    struct parameter *p = (struct parameter *)params;
 
     int laplacian[FILTER_WIDTH][FILTER_HEIGHT] =
         {
@@ -55,7 +56,46 @@ void *compute_laplacian_threadfn(void *params)
             {-1, 8, -1},
             {-1, -1, -1}};
 
-    int red, green, blue;
+    int imageWidth = p->w;
+    int imageHeight = p->h;
+    PPMPixel *image = p->image;
+    PPMPixel *result = p->result;
+    unsigned long start = p->start;
+    unsigned long size = p->size;
+
+    unsigned long stop = start + size;
+
+    for (unsigned long i = start; i < stop; i++)
+    {
+        for (unsigned long j = 0; j < imageWidth; j++)
+        {
+            int red = 0, green = 0, blue = 0;
+
+            for (int k = 0; k < FILTER_HEIGHT; k++)
+            {
+                for (int l = 0; l < FILTER_WIDTH; l++)
+                {
+                    int x_coordinate = (j - FILTER_WIDTH / 2 + l + imageWidth) % imageWidth;
+                    int y_coordinate = (i - FILTER_HEIGHT / 2 + k + imageHeight) % imageHeight;
+
+                    red += image[y_coordinate * imageWidth + x_coordinate].r * laplacian[k][l];
+                    green += image[y_coordinate * imageWidth + x_coordinate].g * laplacian[k][l];
+                    blue += image[y_coordinate * imageWidth + x_coordinate].b * laplacian[k][l];
+                }
+            }
+
+            red = (red < 0) ? 0 : (red > 255) ? 255
+                                              : red;
+            green = (green < 0) ? 0 : (green > 255) ? 255
+                                                    : green;
+            blue = (blue < 0) ? 0 : (blue > 255) ? 255
+                                                 : blue;
+
+            result[i * imageWidth + j].r = red;
+            result[i * imageWidth + j].g = green;
+            result[i * imageWidth + j].b = blue;
+        }
+    }
 
     return NULL;
 }
@@ -67,8 +107,65 @@ void *compute_laplacian_threadfn(void *params)
  */
 PPMPixel *apply_filters(PPMPixel *image, unsigned long w, unsigned long h, double *elapsedTime)
 {
+    struct timeval start, end;
 
-    PPMPixel *result;
+    // allocate memory for the result image
+    PPMPixel *result = (PPMPixel *)malloc(sizeof(PPMPixel) * w * h);
+    if (!result)
+    {
+        printf("Error: Unable to allocate memory for the result image.\n");
+        exit(1);
+    }
+
+    // define parameters for the threads
+    struct parameter *params = malloc(sizeof(struct parameter) * LAPLACIAN_THREADS);
+    if (!params)
+    {
+        printf("Error: Unable to allocate memory for thread parameters.\n");
+        free(result);
+        exit(1);
+    }
+
+    pthread_t threads[LAPLACIAN_THREADS];
+    unsigned long work = h / LAPLACIAN_THREADS;
+
+    // get the start time
+    gettimeofday(&start, NULL);
+
+    // create threads
+    for (int i = 0; i < LAPLACIAN_THREADS; i++)
+    {
+        params[i].image = image;
+        params[i].result = result;
+        params[i].w = w;
+        params[i].h = h;
+        params[i].start = i * work;
+        params[i].size = (i == LAPLACIAN_THREADS - 1) ? (h - params[i].start) : work;
+
+        if (pthread_create(&threads[i], NULL, compute_laplacian_threadfn, (void *)&params[i]) != 0)
+        {
+            printf("Error: Unable to create thread.\n");
+            free(result);
+            free(params);
+            exit(1);
+        }
+    }
+
+    // join threads
+    for (int i = 0; i < LAPLACIAN_THREADS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    // get the end time
+    gettimeofday(&end, NULL);
+
+    // calculate elapsed time in seconds
+    *elapsedTime = (double)(end.tv_sec - start.tv_sec) +
+                   (double)(end.tv_usec - start.tv_usec) / 1000000;
+
+    // free parameters
+    free(params);
 
     return result;
 }
@@ -82,6 +179,17 @@ PPMPixel *apply_filters(PPMPixel *image, unsigned long w, unsigned long h, doubl
  */
 void write_image(PPMPixel *image, char *filename, unsigned long int width, unsigned long int height)
 {
+    FILE *fp = fopen(filename, "wb");
+
+    if (!fp)
+    {
+        printf("Error: Unable to open file for writing.\n");
+        exit(1);
+    }
+
+    fprintf(fp, "P6\n%lu %lu\n255\n", width, height);
+    fwrite(image, sizeof(PPMPixel), width * height, fp);
+    fclose(fp);
 }
 
 /* Open the filename image for reading, and parse it.
@@ -100,8 +208,39 @@ void write_image(PPMPixel *image, char *filename, unsigned long int width, unsig
  */
 PPMPixel *read_image(const char *filename, unsigned long int *width, unsigned long int *height)
 {
+    char buff[16];
+    FILE *fp = fopen(filename, "rb");
 
-    PPMPixel *img;
+    if (!fp)
+    {
+        printf("Error: Unable to open file for reading.\n");
+        exit(1);
+    }
+
+    if (!fgets(buff, sizeof(buff), fp))
+    {
+        printf("Error: Invalid image format.\n");
+        exit(1);
+    }
+
+    if (buff[0] != 'P' || buff[1] != '6')
+    {
+        printf("Error: Invalid image format. Only P6 format is supported.\n");
+        exit(1);
+    }
+
+    int rgb_comp_color;
+    fscanf(fp, "%lu %lu %d\n", width, height, &rgb_comp_color);
+
+    if (rgb_comp_color != RGB_COMPONENT_COLOR)
+    {
+        printf("Error: Invalid rgb component. Only 255 is supported.\n");
+        exit(1);
+    }
+
+    PPMPixel *img = (PPMPixel *)malloc(sizeof(PPMPixel) * (*width) * (*height));
+    fread(img, sizeof(PPMPixel), (*width) * (*height), fp);
+    fclose(fp);
 
     return img;
 }
@@ -116,6 +255,22 @@ PPMPixel *read_image(const char *filename, unsigned long int *width, unsigned lo
 */
 void *manage_image_file(void *args)
 {
+    struct file_name_args *fargs = (struct file_name_args *)args;
+
+    unsigned long int width, height;
+    PPMPixel *image = read_image(fargs->input_file_name, &width, &height);
+
+    double elapsedTime;
+    PPMPixel *result = apply_filters(image, width, height, &elapsedTime);
+
+    total_elapsed_time += elapsedTime;
+
+    write_image(result, fargs->output_file_name, width, height);
+
+    free(image);
+    free(result);
+
+    return NULL;
 }
 /*The driver of the program. Check for the correct number of arguments. If wrong print the message: "Usage ./a.out filename[s]"
   It shall accept n filenames as arguments, separated by whitespace, e.g., ./a.out file1.ppm file2.ppm    file3.ppm
@@ -124,6 +279,34 @@ void *manage_image_file(void *args)
  */
 int main(int argc, char *argv[])
 {
+    if (argc < 2)
+    {
+        printf("Usage ./edge_detector filename[s]\n");
+        return 1;
+    }
+
+    int num_images = argc - 1;
+    pthread_t threads[num_images];
+    struct file_name_args args[num_images];
+
+    for (int i = 0; i < num_images; i++)
+    {
+        args[i].input_file_name = argv[i + 1];
+        sprintf(args[i].output_file_name, "laplacian%d.ppm", i + 1);
+
+        if (pthread_create(&threads[i], NULL, manage_image_file, (void *)&args[i]) != 0)
+        {
+            printf("Error: Unable to create thread.\n");
+            return 1;
+        }
+    }
+
+    for (int i = 0; i < num_images; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Total elapsed time: %.4f s\n", total_elapsed_time);
 
     return 0;
 }
