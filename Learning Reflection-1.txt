@@ -1,71 +1,50 @@
 CSCI-347 Learning Reflection
 
-Name:
+Name: Preston Duffield
 
 ================================================================
 1. What are some of the most important lessons you learned while working on this assignment? Why do you think so?
 
-
-
-
-
-
-
-
-
-
+One of the most important lessons I learned while working on this assignment was how to create a multithreaded program using POSIX threads.
+Another lesson was how to manipulate images in C, from managing files as input to actually changing the file itself.
+Reading and writing P6 images in edge_detector was something I had never done before, and was very interesting.
 
 ==========================================================================
 2. What do you want to learn more about, and why?
 
-
-
-
-
-
-
-
-
-
+I would like to learn about the possiblility of using other image formats. I had never heard of PPM before, and never seen a .ppm file.
+This program would be more useful if it could manipulate jpeg or png files, as those are much more common formats.
+I would also like a deeper understanding of the laplacian filter used. I feel as though I understand the filter enough to implement it,
+but the internal mechanism is still a little unclear.
 
 ==========================================================================
 3. What were some of your most challenging/powerful moments and what made them so?
 
-
-
-
-
-
-
-
-
-
-
+Some of the most challenging moments where managing race conditions.
+I had some issues with threads in the earlier stages of the project that seemed like some "computer magic" was happening.
+Really it was just a matter of threads changing variables at the wrong time, but debgging this was difficult.
+The most powerful moment was when I ran the program on a .ppm image and actually got the correct result.
+This was exciting as it meant I was done with the difficult part and just had to implement the remainder of the reqiurements.
 
 ===============================================================================
 4. What did you learn were your greatest strengths? Your biggest areas for improvement?
 
-
-
-
-
-
-
-
-
-
+I learned that my debugging skills have improved. I was able to more quickly find the issue with my threads. I could still use improvement in this area, however.
+I find that I get on a roll with programming and then one small bug takes me out of that flow state.
+Then I have to chase a bug around before I can get back, once its solved, I have to get back into the context where I left off, which can be difficult.
 
 ===============================================================================
 5. Reread the learning objectives (LOs) of the assignment. State them below and rate your confidence about them on a scale from 1 to 5, where 1 is Not Confident at all, and 5 is Very Confident. 
 Example: LO1: Demonstrate how to write clean and readable code in C. (Confidence level: 4)
 
+LO1: Construct a multithreaded program using POSIX threads. (Confidence level: 5)
 
+LO2: Demonstrate how to read and write binary files. (Confidence level: 5)
 
+LO3: Employ efficient synchronization mechanisms. (Confidence level: 4)
 
+LO4: Examine race conditions using Helgrind, and memory errors using Valgrind. (Confidence level: 3)
 
+LO5: Apply C programming best practices. (Confidence level: 5)
 
-
-
-
-
-
+LO6: Recognize the effect of the number of threads on the program's performance. (Confidence level: 5)
