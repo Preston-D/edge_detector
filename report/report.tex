@@ -1,0 +1,88 @@
+\documentclass{article}
+\usepackage{titling}
+\usepackage{lipsum}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{pgfplots}
+\usepackage{float}
+\usepackage[margin=1in]{geometry}
+\usepgfplotslibrary{statistics}
+
+
+
+\begin{document}
+\noindent
+\begin{minipage}[t]{0.6\textwidth}
+    \begin{flushleft}
+        \LARGE\textbf{CSCI 347 - Project 3 Report} \\
+        \vspace{6pt} % add 6pt of vertical space
+        \hrule width 10cm
+        \vspace{12pt}
+        \large\textbf{Preston Duffield} \\
+        \large Western Washington University \\
+        \today
+        \vspace{24pt}
+    \end{flushleft}
+\end{minipage}
+
+\section*{Edge Detector}
+Edge Detector is an edge detection program that uses a
+laplacian filter to highlight the edges in a set of images.
+The images are specified as command line arguments and the project
+is designed to process multiple images concurrently using threads.
+The goal of the project is to concurrently apply the laplacian
+filter to multiple images, improving the execution time
+compared to sequential execution. \\
+
+The program contains several functions, structs,
+and a global variable, all of which work together to process the images:
+\begin{enumerate}
+  \item \texttt{PPMPixel} Struct: This struct represents a pixel in an image, with the RGB values of the pixel.
+  \item \texttt{parameter} Struct: This struct holds the information each thread needs to perform its task.
+  \item \texttt{file\_name\_args} Struct: This struct is used to hold the input and output filenames for each image.
+  \item \texttt{total\_elapsed\_time} Global Variable: This is a double value that tracks the total time taken by all threads to process all input images.
+  \item \texttt{compute\_laplacian\_threadfn}: This is the thread function. It applies the Laplacian filter to a section of the image.
+  \item \texttt{apply\_filters}: This function uses threads to apply the Laplacian filter to an image and measures the time taken.
+  \item \texttt{write\_image}: This function saves a processed image to a file.
+  \item \texttt{read\_image}: This function reads an image file and returns a PPMPixel pointer to the pixel data.
+  \item \texttt{manage\_image\_file}: This is another thread function. It manages the entire process of reading an image file, processing the image, and writing the result to a file.
+  \item \texttt{main}: This is the entry point of the program. It checks command line arguments, creates threads to process each image file, and prints the total elapsed time.
+\end{enumerate}
+\section*{Concurrency}
+Concurrency in this program is achieved through the use of POSIX threads (pthreads).
+For each image file passed as a command line argument,
+a new thread is created in the main function.
+Each of these threads runs the \texttt{manage\_image\_file} function,
+which manages the processing of one image.\\
+
+Within the \texttt{manage\_image\_file} function,
+the \texttt{apply\_filters} function is called,
+which further divides the work among a specified number of threads
+(defined by the \texttt{LAPLACIAN\_THREADS} macro).
+Each of these threads runs the \texttt{compute\_laplacian\_threadfn} function,
+which applies the Laplacian filter to a section of the image.\\
+
+In terms of handling possible race conditions,
+the main area where this could occur is when updating the \texttt{total\_elapsed\_time}
+global variable. However, as each image file is processed
+by a separate thread and the time taken to process each image is
+added to \texttt{total\_elapsed\_time} in a single operation, there's no risk of
+race conditions here as the operation is atomic.
+Furthermore, as the processed images are written to separate files,
+there is no risk of a race condition when writing the output.\\
+
+\section*{Experiments}
+
+\section*{Results}
+
+\section*{Implications of Results}
+
+\section*{Conclusion}
+
+\appendix
+\section*{Appendix}
+
+
+\end{document}

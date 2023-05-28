@@ -2,3 +2,5 @@
 *.ppm
 proompt.txt
 .DS_Store
+report/report.aux
+report/report.log
