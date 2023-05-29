@@ -35,9 +35,10 @@ is designed to process multiple images concurrently using threads.
 The goal of the project is to concurrently apply the laplacian
 filter to multiple images, improving the execution time
 compared to sequential execution. \\
-
-The program contains several functions, structs,
-and a global variable, all of which work together to process the images:
+\begin{flushleft}
+  The program contains several functions, structs,
+  and a global variable, all of which work together to process the images:
+\end{flushleft}
 \begin{enumerate}
   \item \texttt{PPMPixel} Struct: This struct represents a pixel in an image, with the RGB values of the pixel.
   \item \texttt{parameter} Struct: This struct holds the information each thread needs to perform its task.
@@ -50,6 +51,13 @@ and a global variable, all of which work together to process the images:
   \item \texttt{manage\_image\_file}: This is another thread function. It manages the entire process of reading an image file, processing the image, and writing the result to a file.
   \item \texttt{main}: This is the entry point of the program. It checks command line arguments, creates threads to process each image file, and prints the total elapsed time.
 \end{enumerate}
+
+\subsection*{Shell Script}
+Edge detector can be run from a shell script.
+The script, \texttt{run\_program.sh}, accepts a directory as a command line argument.
+It then collects all of the \texttt{.ppm} files and passes them as input into the edge detection program.
+
+\clearpage
 \section*{Concurrency}
 Concurrency in this program is achieved through the use of POSIX threads (pthreads).
 For each image file passed as a command line argument,
@@ -73,12 +81,84 @@ race conditions here as the operation is atomic.
 Furthermore, as the processed images are written to separate files,
 there is no risk of a race condition when writing the output.\\
 
-\section*{Experiments}
+\section*{Experiment}
+The following experiment was ran on a 2.2 GHz 6-Core Intel Core i7 processor.
+A Python program\footnote{See Appendix} was written to run \texttt{run\_program.sh} 10 times and record the results to a .csv file.
+Each time the program was ran on 40 images of various sizes.
+10 replicants (runs) were performed for each test and the times where noted.
+Using the same photos, run amounts, and processor, we can isolate our variable, which is the amount of threads that \texttt{edge\_detector.c} opens.
+The experiement was ran with \texttt{LAPLACIAN\_THREADS}, the value which defines the number of threads that work on a single image, set to values 1 through 16.
+The experiment was run 16 times, with 10 replicants each, for a total of 160 data points.
 
+\subsection*{Experiemental Design Summary}
+\begin{flushleft}
+  \textbf{Variables:} The value of \texttt{LAPLACIAN\_THREADS}, tested from 1 to 16. \\
+\end{flushleft}
+
+\begin{flushleft}
+  \textbf{Response:} The combined time in seconds needed for each thread to complete its task. \\
+\end{flushleft}
+
+\begin{flushleft}
+  \textbf{Replicants:} 10 replicants for each level of \texttt{LAPLACIAN\_THREADS}, for a total of 160 data points. \\
+\end{flushleft}
+
+\begin{flushleft}
+  \textbf{Constants:}
+  \begin{itemize}
+    \item 40 images were processed in each run.
+    \item each test was run on the same processor.
+  \end{itemize}
+\end{flushleft}
+
+\clearpage
 \section*{Results}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{./images/3.png}
+  \caption{Descriptive statistics of the data.}
+  \label{fig:3_b_2}
+\end{figure}
+
+The descriptive statistics of the data show that the means are grouped around the values of around 16 to 23 seconds.
+Note that "N" is the amount of replicants, and "Variable" is the amount of laplacian threads.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{./images/2.png}
+  \caption{Boxplot of the data.}
+  \label{fig:3_b_2}
+\end{figure}
+The boxplot shows the spread in the data from each test performed. Note that from around threads 6 to 9, the data is less spread out, ie has a smaller standard deviation than other values.
+The dots indicate outliers, these are single data points that lie outside the interquartile range of the data for a single test.
+
+\clearpage
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{./images/1.png}
+  \caption{Line plot of means.}
+  \label{fig:3_b_2}
+\end{figure}
+This lineplot shows the mean for each replicant of each test connected by a line.
+That is, each dot represents the average of all 10 invocations of
+\texttt{edge\_detector} at a given thread amount, from 1 to 16.
 
 \section*{Implications of Results}
+From the boxplot we note that the spread of the data,
+ie, the standard deviation is lower for the thread counts 6,7,8,9.
+This could be related to the fact that the processor the experiment was
+ran on had 6 total cores.
+However, more experiments on systems with different core counts
+would be needed to verify this.
+Thus we cannot say with certainty that this change in spread
+is anything but a statistical anomally,
+but it is an interesting result nonetheless. \\
 
+The lineplot seems to show the mean time in seconds decreasing
+as the laplacian threads increase. This increase is most significant
+from 1 to 6 threads, however, after that it appears to reach an
+asymptote at around 17 seconds. This seems to indicate that increasing
+the amount of threads decreases the mean time in seconds up to a certain amount.
 \section*{Conclusion}
 
 \appendix
