@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <string.h>
 
-#define LAPLACIAN_THREADS 4 // change the number of threads as you run your concurrency experiment
+#define LAPLACIAN_THREADS 124 // change the number of threads as you run your concurrency experiment
 
 /* Laplacian filter is 3 by 3 */
 #define FILTER_WIDTH 3

@@ -29,7 +29,7 @@
 
 \section*{Edge Detector}
 Edge Detector is an edge detection program that uses a
-laplacian filter to highlight the edges in a set of images.
+Laplacian filter to highlight the edges in a set of images.
 The images are specified as command line arguments and the project
 is designed to process multiple images concurrently using threads.
 The goal of the project is to concurrently apply the laplacian
@@ -82,12 +82,12 @@ Furthermore, as the processed images are written to separate files,
 there is no risk of a race condition when writing the output.\\
 
 \section*{Experiment}
-The following experiment was ran on a 2.2 GHz 6-Core Intel Core i7 processor.
+The following experiment was run on a 2.2 GHz 6-Core Intel Core i7 processor.
 A Python program\footnote{See Appendix} was written to run \texttt{run\_program.sh} 10 times and record the results to a .csv file.
-Each time the program was ran on 40 images of various sizes.
+Each time the program was run on 40 images of various sizes.
 10 replicants (runs) were performed for each test and the times where noted.
 Using the same photos, run amounts, and processor, we can isolate our variable, which is the amount of threads that \texttt{edge\_detector.c} opens.
-The experiement was ran with \texttt{LAPLACIAN\_THREADS}, the value which defines the number of threads that work on a single image, set to values 1 through 16.
+The experiement was run with \texttt{LAPLACIAN\_THREADS}, the value which defines the number of threads that work on a single image, set to values 1 through 16.
 The experiment was run 16 times, with 10 replicants each, for a total of 160 data points.
 
 \subsection*{Experiemental Design Summary}
@@ -160,9 +160,103 @@ from 1 to 6 threads, however, after that it appears to reach an
 asymptote at around 17 seconds. This seems to indicate that increasing
 the amount of threads decreases the mean time in seconds up to a certain amount.
 \section*{Conclusion}
+The results of the experiment provide some interesting insights into the
+concurrent processing of images using the Edge Detector program. \\
 
+In the given setting, the number of Laplacian threads has a significant
+impact on the overall processing time, particularly when the number of
+threads ranges from 1 to 6. The mean processing time reduces significantly
+within this range, which corroborates the basic principle of concurrency
+- that dividing the work among multiple threads can expedite the execution time. \\
+
+However, the effects of concurrency are not linear, and the data starts
+to plateau after around 6 threads, reaching an asymptote at approximately
+17 seconds. This suggests that there is a limit to the performance
+improvement that can be achieved through increasing the number of threads.
+Beyond a certain point, the overhead of creating and managing more threads
+may start to negate the performance benefits of concurrency. \\
+
+The decrease in data spread for thread counts between 6 and 9 is also
+noteworthy. This result aligns with the 6-core architecture of the test
+processor, and it may imply an optimal thread count per core. However,
+this hypothesis requires further testing on processors with different core counts to confirm. \\
+
+Overall, the Edge Detector program successfully leverages the power
+of concurrency to enhance its performance. The optimal number of threads
+to achieve the fastest processing time appears to be dependent on the
+processor architecture, specifically the number of cores. Therefore,
+to optimize the performance of similar concurrent applications,
+developers should take into account the characteristics of the target
+hardware, including the number of cores and the cost of thread management.
+Future studies could investigate how other factors, such as the size and
+complexity of the images, may also impact the performance of concurrent
+image processing applications. \\
+
+\clearpage
 \appendix
 \section*{Appendix}
-
+\subsection*{Python Program}
+\begin{lstlisting}[language=Python, 
+  basicstyle=\ttfamily\small, 
+  numbers=none, 
+  frame=single, 
+  caption={A Python program that runs \texttt{run\_program.sh} 10 times and records the results to a csv file.},
+  label=code:min_penalty_path,
+  escapeinside={(*}{*)}]
+  import sys
+  import subprocess
+  import csv
+  import os
+  import re
+  
+  def run_edge_detector(times, image_folder):
+      # Check if the given folder exists
+      if not os.path.isdir(image_folder):
+          print("Image folder not found")
+          return
+  
+      # Check if run_program.sh exists
+      if not os.path.isfile("./run_program.sh"):
+          print("run_program.sh not found")
+          return
+  
+      # Prepare the csv file
+      with open('output.csv', 'w', newline='') as file:
+          writer = csv.writer(file)
+          writer.writerow(["Seconds"])
+  
+          # Loop to run the edge detector for the given number of times
+          for i in range(times):
+              try:
+                  print("Run: ", i)
+                  # Run the shell script with the image folder as an argument
+                  process = subprocess.Popen(
+                    ['./run_program.sh', image_folder],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                  stdout, stderr = process.communicate()
+                  # Check for errors in the shell script
+                  if process.returncode != 0:
+                      print(f"Error in run_program.sh: {stderr.decode('utf-8')}")
+                      continue
+                  # Extract the time from the output using regular expressions
+                  match = re.search(r"Total elapsed time: (\d+\.\d+) s"\,
+                    stdout.decode('utf-8'))
+                  if match:
+                      writer.writerow([match.group(1)])
+                  else:
+                      print("Could not extract time from run_program.sh output")
+  
+              except Exception as e:
+                  print(f"Unexpected error: {e}")
+  
+  if __name__ == "__main__":
+      # Check if the correct number of arguments was given
+      if len(sys.argv) != 3:
+          print("Usage: python3 run_edge_detector.py <times> <image_folder>")
+          sys.exit(1)
+      # Run the edge detector
+      run_edge_detector(int(sys.argv[1]), sys.argv[2])
+  
+\end{lstlisting} 
 
 \end{document}
